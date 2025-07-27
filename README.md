@@ -404,7 +404,7 @@ Now lets put this all together. If you examine the device definition above you w
 
 # Contribution Guidelines
 
-- All code is formatted with black. The check format script that runs in CI will ensure that code meets this requirement and that it is correctly formatted with black. Instructions for installing black in many editors can be found here: <https://github.com/psf/black#editor-integration>
+- All code is formatted with ruff. The check format script that runs in CI will ensure that code meets this requirement and that it is correctly formatted with ruff. Instructions for integrating ruff in many editors can be found here: <https://docs.astral.sh/ruff/editors/>
 
 - Capture the SimpleDescriptor log entries for each endpoint on the device. These can be found in the HA logs after joining a device and they look like this: `<SimpleDescriptor endpoint=1 profile=260 device_type=1026 device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280, 2821] output_clusters=[25]>`. This information can also be obtained from the zigbee.db if you want to take the time to query the tables and reconstitute the log entry. I find it easier to just remove and rejoin the device. ZHA entity ids are stable for the most part so it _shouldn't_ disrupt anything you have configured. These need to match what the device reports EXACTLY or zigpy will not match them when a device joins and the handler will not be used for the device. You can also obtain this information from the device screen in HA for the device. The `Zigbee Device Signature` button will launch a dialog that contains all of the information necessary to create quirks.
 
