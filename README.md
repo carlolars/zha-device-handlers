@@ -451,14 +451,6 @@ Open a terminal at the root of the project and run the setup script: `script/set
 
 The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
 
-### Getting started
-
-To get set up, you need install the test dependencies:
-
-```bash
-pip install -r requirements_test.txt
-```
-
 ### Running the tests
 
 See the [pytest documentation](https://docs.pytest.org/en/latest/) for details about how to run
