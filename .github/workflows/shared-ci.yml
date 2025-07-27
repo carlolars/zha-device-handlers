@@ -1,0 +1,217 @@
+name: CI
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_call:
+    inputs:
+      CODE_FOLDER:
+        description: Folder code lives in
+        required: true
+        default: zigpy
+        type: string
+      CACHE_VERSION:
+        description: Cache version
+        required: false
+        default: 3
+        type: string
+      PYTHON_VERSION_DEFAULT:
+        description: Default Python version
+        required: false
+        default: 3.9.15
+        type: string
+      PRE_COMMIT_CACHE_PATH:
+        description: Pre-commit cache path
+        required: false
+        default: ~/.cache/pre-commit
+        type: string
+      MINIMUM_COVERAGE_PERCENTAGE:
+        description: Minimum code coverage percentage
+        required: false
+        default: 80
+        type: string
+      PYTHON_MATRIX:
+        description: 'Comma-separated list of Python versions e.g. "3.11","3.12"'
+        default: '"3.9.15", "3.10.8", "3.11.0", "3.12.9", "3.13.2"'
+        required: false
+        type: string
+
+    # secrets:
+    #   CODECOV_TOKEN:
+    #     required: true
+
+jobs:
+  # Separate job to pre-populate the base dependency cache
+  # This prevent upcoming jobs to do the same individually
+  prepare-base:
+    name: Prepare base dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ${{ fromJSON(format('[{0}]', inputs.PYTHON_MATRIX)) }}
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+      - name: Restore base Python virtual environment
+        id: cache-venv
+        uses: actions/cache/restore@v4
+        with:
+          path: .venv
+          key: >-
+            ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
+            steps.python.outputs.python-version }}-${{
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
+      - name: Create Python virtual environment
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        env:
+          AIOHTTP_NO_EXTENSIONS: 1
+          MULTIDICT_NO_EXTENSIONS: 1
+          FROZENLIST_NO_EXTENSIONS: 1
+          YARL_NO_EXTENSIONS: 1
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync --group ci-test
+      - name: Cache base Python virtual environment
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .venv
+          key: ${{ steps.cache-venv.outputs.cache-primary-key }}
+
+  pre-commit:
+    name: Run pre-commit
+    runs-on: ubuntu-latest
+    needs: prepare-base
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ inputs.PYTHON_VERSION_DEFAULT }}
+        uses: actions/setup-python@v5
+        id: python
+        with:
+          python-version: ${{ inputs.PYTHON_VERSION_DEFAULT }}
+      - name: Restore base Python virtual environment
+        id: cache-venv
+        uses: actions/cache/restore@v4
+        with:
+          fail-on-cache-miss: true
+          path: .venv
+          key: >-
+            ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
+            steps.python.outputs.python-version }}-${{
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
+      - name: Restore pre-commit environment from cache
+        id: cache-precommit
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ inputs.PRE_COMMIT_CACHE_PATH }}
+          key: |
+            ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Install pre-commit dependencies
+        if: steps.cache-precommit.outputs.cache-hit != 'true'
+        run: |
+          . .venv/bin/activate
+          pre-commit install-hooks
+      - name: Cache pre-commit environment
+        if: steps.cache-precommit.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ inputs.PRE_COMMIT_CACHE_PATH }}
+          key: ${{ steps.cache-precommit.outputs.cache-primary-key }}
+      - name: Lint and static analysis
+        run: |
+          . .venv/bin/activate
+          pre-commit run --show-diff-on-failure --color=always --all-files
+
+  pytest:
+    runs-on: ubuntu-latest
+    needs: prepare-base
+    strategy:
+      matrix:
+        python-version: ${{ fromJSON(format('[{0}]', inputs.PYTHON_MATRIX )) }}
+    name: >-
+      Run tests Python ${{ matrix.python-version }}
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        id: python
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+      - name: Restore base Python virtual environment
+        id: cache-venv
+        uses: actions/cache/restore@v4
+        with:
+          fail-on-cache-miss: true
+          path: .venv
+          key: >-
+            ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
+            steps.python.outputs.python-version }}-${{
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
+      - name: Register Python problem matcher
+        run: |
+          echo "::add-matcher::.github/workflows/matchers/python.json"
+      - name: Run pytest
+        run: |
+          . .venv/bin/activate
+          pytest \
+            -n auto \
+            -qq \
+            --timeout=20 \
+            --durations=10 \
+            --cov ${{ inputs.CODE_FOLDER }} \
+            --cov-config pyproject.toml \
+            -o console_output_style=count \
+            -p no:sugar \
+            tests
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          include-hidden-files: true
+          path: .coverage
+
+  coverage:
+    name: Process test coverage
+    runs-on: ubuntu-latest
+    needs: pytest
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        id: python
+        with:
+          python-version: ${{ inputs.PYTHON_VERSION_DEFAULT }}
+          allow-prereleases: true
+      - name: Restore base Python virtual environment
+        id: cache-venv
+        uses: actions/cache/restore@v4
+        with:
+          fail-on-cache-miss: true
+          path: .venv
+          key: >-
+            ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
+            steps.python.outputs.python-version }}-${{
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+      - name: Combine coverage results
+        run: |
+          . .venv/bin/activate
+          coverage combine coverage*/.coverage*
+          coverage report --fail-under=${{ inputs.MINIMUM_COVERAGE_PERCENTAGE }}
+          coverage xml
+    #   - name: Upload coverage to Codecov
+    #     if: ${{ github.event.repository.fork == false }}
+    #     uses: codecov/codecov-action@v5
+    #     with:
+    #       token: ${{ secrets.CODECOV_TOKEN }}
+    #       fail_ci_if_error: true

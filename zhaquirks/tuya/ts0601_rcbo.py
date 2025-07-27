@@ -1,6 +1,6 @@
 """Tuya Din RCBO Circuit Breaker."""
 
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -162,9 +162,9 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 
@@ -296,9 +296,9 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Union[int, t.uint16_t] | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: Union[int, t.uint8_t] | None = None,
     ):
         """Override the default Cluster command."""
 
