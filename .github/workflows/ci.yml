@@ -9,7 +9,7 @@ on:
 
 jobs:
   shared-ci:
-    uses: ./.github/workflows/shared/ci.yml
+    uses: ./.github/workflows/shared-ci.yml
     with:
       CODE_FOLDER: zhaquirks
       CACHE_VERSION: 3
