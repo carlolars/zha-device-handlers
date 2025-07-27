@@ -449,7 +449,12 @@ You can see a pattern that illustrates how to match a more complex event. In thi
 
 Open a terminal at the root of the project and run the setup script: `script/setup` This script will install all necessary dependencies and it will install the precommit hook.
 
-The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
+The dependencies are installed using the pinned versions in the `uv.lock` file.
+To update a single direct dependency, for example `zigpy` and all packages it
+depend on, the lockfile needs to be updated using the command
+```
+$ uv lock -P zigpy
+```
 
 ### Running the tests
 
