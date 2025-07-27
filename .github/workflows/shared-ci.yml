@@ -65,7 +65,7 @@ jobs:
           key: >-
             ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
             steps.python.outputs.python-version }}-${{
-            hashFiles('setup.py', 'requirements_test.txt', 'requirements.txt', 'pyproject.toml', 'setup.cfg') }}
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
       - name: Create Python virtual environment
         if: steps.cache-venv.outputs.cache-hit != 'true'
         env:
@@ -105,7 +105,7 @@ jobs:
           key: >-
             ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
             steps.python.outputs.python-version }}-${{
-            hashFiles('setup.py', 'requirements_test.txt', 'requirements.txt', 'pyproject.toml', 'setup.cfg') }}
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
       - name: Restore pre-commit environment from cache
         id: cache-precommit
         uses: actions/cache/restore@v4
@@ -116,7 +116,8 @@ jobs:
       - name: Install pre-commit dependencies
         if: steps.cache-precommit.outputs.cache-hit != 'true'
         run: |
-          uv run pre-commit install-hooks
+          . venv/bin/activate
+          pre-commit install-hooks
       - name: Cache pre-commit environment
         if: steps.cache-precommit.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -125,7 +126,8 @@ jobs:
           key: ${{ steps.cache-precommit.outputs.cache-primary-key }}
       - name: Lint and static analysis
         run: |
-          uv run pre-commit run --show-diff-on-failure --color=always --all-files
+          . venv/bin/activate
+          pre-commit run --show-diff-on-failure --color=always --all-files
 
   pytest:
     runs-on: ubuntu-latest
@@ -153,13 +155,14 @@ jobs:
           key: >-
             ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
             steps.python.outputs.python-version }}-${{
-            hashFiles('setup.py', 'requirements_test.txt', 'requirements.txt', 'pyproject.toml', 'setup.cfg') }}
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
       - name: Register Python problem matcher
         run: |
           echo "::add-matcher::.github/workflows/matchers/python.json"
       - name: Run pytest
         run: |
-          uv run pytest \
+          . venv/bin/activate
+          pytest \
             -n auto \
             -qq \
             --timeout=20 \
@@ -198,14 +201,15 @@ jobs:
           key: >-
             ${{ inputs.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
             steps.python.outputs.python-version }}-${{
-            hashFiles('setup.py', 'requirements_test.txt', 'requirements.txt', 'pyproject.toml', 'setup.cfg') }}
+            hashFiles('setup.py', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
       - name: Download all coverage artifacts
         uses: actions/download-artifact@v4
       - name: Combine coverage results
         run: |
-          uv run coverage combine coverage*/.coverage*
-          uv run coverage report --fail-under=${{ inputs.MINIMUM_COVERAGE_PERCENTAGE }}
-          uv run coverage xml
+          . venv/bin/activate
+          coverage combine coverage*/.coverage*
+          coverage report --fail-under=${{ inputs.MINIMUM_COVERAGE_PERCENTAGE }}
+          coverage xml
     #   - name: Upload coverage to Codecov
     #     if: ${{ github.event.repository.fork == false }}
     #     uses: codecov/codecov-action@v5
