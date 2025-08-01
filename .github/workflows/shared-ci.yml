@@ -67,7 +67,7 @@ jobs:
             steps.python.outputs.python-version }}-${{
             hashFiles('setup.py', 'requirements_test.txt', 'requirements.txt', 'pyproject.toml', 'setup.cfg', 'uv.lock') }}
       - name: Create Python virtual environment
-        if: steps.cache-venv.outputs.cache-hit != 'true'
+        # if: steps.cache-venv.outputs.cache-hit != 'true'
         env:
           AIOHTTP_NO_EXTENSIONS: 1
           MULTIDICT_NO_EXTENSIONS: 1
@@ -77,6 +77,7 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
 
           if ! uv sync --group ci ; then
+            echo "Failed to sync with 'ci' group"
             uv venv
             uv pip install -U pip setuptools pre-commit
             uv pip install -r requirements_test.txt
