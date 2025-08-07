@@ -556,6 +556,8 @@ def test_ts0121_signature(assert_signature_matches_quirk):
 
 Running `uv sync` will install all packets using the locked version in the `uv.lock` file. The setup script will do this for you.
 
+The `dev` dependency group is installed by default by `uv sync`. The `ci` dependency group is for CI only packages.
+
 ### Updating locked dependencies
 
 After modifying a constraint for a dependency in the `pyproject.toml` file, for example bumping the minimum version
@@ -577,7 +579,8 @@ See [uv dependency fields] for details, but in short put project dependencies, p
 when installing the project, go into the `dependencies` list and packets used only for development go into `dev`
 list in `dependency-groups`.
 
-Alternatively use `uv add <package>` to add a project dependency or `uv add --dev <package>` to add a dev-dependency.
+Alternatively use `uv add <package>` to add a project dependency or `uv add --dev <package>` to add to the `dev` group,
+or `uv add --group ci <package>` to add to the `ci` group.
 
 [uv dependency fields]: https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-fields
 

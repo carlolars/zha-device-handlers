@@ -17,6 +17,10 @@ dependencies = ["zigpy>=0.82.2"]
 exclude = ["tests", "tests.*"]
 
 [dependency-groups]
+ci = [
+    "pytest-github-actions-annotate-failures>=0.3.0",
+    "pytest-xdist>=3.8.0",
+]
 dev = [
     "codecov",
     "codespell>=2.3.0",
