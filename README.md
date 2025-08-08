@@ -450,6 +450,8 @@ You can see a pattern that illustrates how to match a more complex event. In thi
 Open a terminal at the root of the project and run the setup script: `script/setup` This script will install all necessary dependencies and it will install the precommit hook.
 
 All the dependencies are installed using the locked versions in the `uv.lock` file.
+To keep the environment up to date with the locked versions of the dependencies, run `uv sync` make sure the
+environment matches the `uv.lock` file.
 
 ### Running the tests
 
@@ -554,9 +556,22 @@ def test_ts0121_signature(assert_signature_matches_quirk):
 
 ## Managing dependencies
 
-Running `uv sync` will install all packages using the locked version in the `uv.lock` file. The setup script will do this for you.
+This project uses [uv] to manage dependencies and ensure reproducible environments.
 
-The `dev` dependency group is installed by default by `uv sync`. The `ci` dependency group is for CI only packages.
+[uv]: https://docs.astral.sh/uv/
+
+### Sync the virtual environment
+
+Running `uv sync` will install all packages using the locked version from the `uv.lock` file into the virtual environment.
+It will also *remove* any package that is not listed in the `uv.lock` file.
+
+If/when the `uv.lock` file has been changed, which can be the case when for example switching branch or after merging `dev`
+branch into the current branch, you will usually need to re-sync the virtual environment using `uv sync` to ensure that the
+environment is up to date with the locked versions of the dependencies.
+The `script/setup` script will do this for you (and some more), so use the script once and then use `uv sync` to keep the
+environment up to date.
+
+The `dev` dependency group is installed by default by `uv sync`.
 
 ### Updating locked dependencies
 
@@ -572,15 +587,15 @@ To update *all* packages to their latest version that fulfills the constraints u
 
 ### Adding new dependencies
 
-To add a new dependency just add it to the appropriate field in the `pyproject.toml` file and run `uv lock`
+Use `uv add <package>` to add a project dependency, `uv add --dev <package>` to add to the `dev` group,
+or `uv add --group ci <package>` to add to the `ci` group.
+Alternatively just add it to the appropriate field in the `pyproject.toml` file and run `uv lock`
 to update the lockfile. Only the new package and its dependencies will be added/updated in the lockfile.
 
-See [uv dependency fields] for details, but in short project dependencies, packages that should be installed
-when installing the project, go into the `dependencies` list and packages used only for development go into `dev`
-list in `dependency-groups`.
-
-Alternatively use `uv add <package>` to add a project dependency or `uv add --dev <package>` to add to the `dev` group,
-or `uv add --group ci <package>` to add to the `ci` group.
+In short, project dependencies, packages that should be installed when
+installing the project, go into `dependencies`. Packages used only for development go into the `dev`
+group in `dependency-groups` and packages used only for CI go into the `ci` group.
+See [uv dependency fields] for details.
 
 [uv dependency fields]: https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-fields
 
