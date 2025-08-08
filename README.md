@@ -554,7 +554,7 @@ def test_ts0121_signature(assert_signature_matches_quirk):
 
 ## Managing dependencies
 
-Running `uv sync` will install all packets using the locked version in the `uv.lock` file. The setup script will do this for you.
+Running `uv sync` will install all packages using the locked version in the `uv.lock` file. The setup script will do this for you.
 
 The `dev` dependency group is installed by default by `uv sync`. The `ci` dependency group is for CI only packages.
 
@@ -563,20 +563,20 @@ The `dev` dependency group is installed by default by `uv sync`. The `ci` depend
 After modifying a constraint for a dependency in the `pyproject.toml` file, for example bumping the minimum version
 of `zigpy`, use `uv lock` to update the locked versions for the dependency and all its dependencies so that the new
 constraint is fulfilled.
-Note that the `lock` command will not update packets already in the lockfile that already fulfills the constraints,
+Note that the `lock` command will not update packages already in the lockfile that already fulfills the constraints,
 even if there are newer versions available.
 
-To update a *single* packet to its latest available version that fulfills the constraints use `uv lock --upgrade-packet <packet>`.
+To update a *single* package to its latest available version that fulfills the constraints use `uv lock --upgrade-package <package>`.
 
-To update *all* packets to their latest version that fulfills the constraints use `uv lock --upgrade`.
+To update *all* packages to their latest version that fulfills the constraints use `uv lock --upgrade`.
 
 ### Adding new dependencies
 
 To add a new dependency just add it to the appropriate field in the `pyproject.toml` file and run `uv lock`
-to update the lockfile. Only the new packet and its dependencies will be added/updated in the lockfile.
+to update the lockfile. Only the new package and its dependencies will be added/updated in the lockfile.
 
-See [uv dependency fields] for details, but in short put project dependencies, packets that should be installed
-when installing the project, go into the `dependencies` list and packets used only for development go into `dev`
+See [uv dependency fields] for details, but in short project dependencies, packages that should be installed
+when installing the project, go into the `dependencies` list and packages used only for development go into `dev`
 list in `dependency-groups`.
 
 Alternatively use `uv add <package>` to add a project dependency or `uv add --dev <package>` to add to the `dev` group,
